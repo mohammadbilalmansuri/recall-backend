@@ -4,5 +4,6 @@ declare namespace Express {
       id: string;
       email: string;
     };
+    content?: Record<string, any>;
   }
 }
