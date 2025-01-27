@@ -5,20 +5,16 @@
   "scripts": {
     "start": "tsc -b && node dist/index.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "recall",
+    "secondbrain",
+    "brain",
+    "recall-backend"
+  ],
+  "author": "Mohammad Bilal Mansuri",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "description": "",
-  "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
-    "@types/cookie-parser": "^1.4.8",
-    "@types/cors": "^2.8.17",
-    "@types/dotenv": "^6.1.1",
-    "@types/express": "^5.0.0",
-    "@types/jsonwebtoken": "^9.0.7",
-    "typescript": "^5.7.3"
-  },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
@@ -28,5 +24,14 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",
     "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "typescript": "^5.7.3"
   }
 }
