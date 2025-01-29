@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
-import ApiError from "../utils/ApiError.ts";
+import ApiError from "../utils/ApiError";
 
 const globalErrorHandler: ErrorRequestHandler = (
   err,

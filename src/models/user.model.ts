@@ -1,14 +1,14 @@
-import { model, Schema, Document, Model } from "mongoose";
+import { model, Schema, Document } from "mongoose";
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
-import bcrypt from "bcrypt";
+import argon2, { argon2id } from "argon2";
 import {
   ACCESS_TOKEN_SECRET,
   ACCESS_TOKEN_EXPIRY,
   REFRESH_TOKEN_SECRET,
   REFRESH_TOKEN_EXPIRY,
-} from "../constant.js";
+} from "../constants";
 
-interface IUser extends Document {
+export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
@@ -16,10 +16,6 @@ interface IUser extends Document {
   comparePassword(password: string): Promise<boolean>;
   generateAccessToken(): string;
   generateRefreshToken(): string;
-}
-
-interface IUserModel extends Model<IUser> {
-  findByEmail(email: string): Promise<IUser | null>;
 }
 
 const userSchema = new Schema<IUser>(
@@ -46,10 +42,15 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-userSchema.pre("save", async function (next) {
+userSchema.pre<IUser>("save", async function (next) {
   if (!this.isModified("password")) return next();
   try {
-    this.password = await bcrypt.hash(this.password, 8);
+    this.password = await argon2.hash(this.password, {
+      type: argon2id,
+      memoryCost: 2 ** 16,
+      timeCost: 3,
+      parallelism: 1,
+    });
     next();
   } catch (error) {
     next(error as Error);
@@ -59,7 +60,7 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparePassword = async function (
   password: string
 ): Promise<boolean> {
-  return await bcrypt.compare(password, this.password);
+  return await argon2.verify(this.password, password);
 };
 
 userSchema.methods.generateAccessToken = function (): string {
@@ -78,9 +79,5 @@ userSchema.methods.generateRefreshToken = function (): string {
   });
 };
 
-userSchema.statics.findByEmail = function (email: string) {
-  return this.findOne({ email });
-};
-
-const User = model<IUser, IUserModel>("User", userSchema);
+const User = model<IUser>("User", userSchema);
 export default User;

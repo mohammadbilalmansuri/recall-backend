@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { PORT } from "./constant.ts";
-import app from "./app.ts";
-import connectDB from "./db.ts";
+import { PORT } from "./constants";
+import app from "./app";
+import connectDB from "./db";
 
 (async () => {
   try {

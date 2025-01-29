@@ -1,6 +1,6 @@
-import ApiError from "../utils/ApiError.ts";
+import ApiError from "../utils/ApiError";
 import jwt, { VerifyErrors } from "jsonwebtoken";
-import { ACCESS_TOKEN_SECRET } from "../constant.ts";
+import { ACCESS_TOKEN_SECRET } from "../constants";
 import { Request, Response, NextFunction } from "express";
 
 const verifyAccess = (req: Request, _: Response, next: NextFunction) => {
@@ -14,7 +14,7 @@ const verifyAccess = (req: Request, _: Response, next: NextFunction) => {
 
   jwt.verify(
     token,
-    ACCESS_TOKEN_SECRET,
+    ACCESS_TOKEN_SECRET as string,
     (err: VerifyErrors | null, decodedInfo: any) => {
       if (err) {
         console.error("JWT verification error:", err);

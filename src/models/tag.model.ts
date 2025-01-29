@@ -1,12 +1,12 @@
 import { model, Schema, Document } from "mongoose";
 
 interface ITag extends Document {
-  title: string;
+  name: string;
 }
 
 const tagSchema = new Schema<ITag>(
   {
-    title: {
+    name: {
       type: String,
       required: [true, "Title is required"],
       unique: true,

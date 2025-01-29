@@ -1,11 +1,12 @@
-import { model, Schema, Document } from "mongoose";
+import { model, Schema, Document, Types } from "mongoose";
+import Tag from "./tag.model";
 
-interface IContent extends Document {
+export interface IContent extends Document {
   title: string;
-  link: string;
+  link?: string;
   description?: string;
-  type: "tweet" | "image" | "video" | "audio" | "article";
-  tags: Schema.Types.ObjectId[];
+  type: "todo" | "tweet" | "image" | "video" | "audio" | "article";
+  tags?: Schema.Types.ObjectId[];
   owner: Schema.Types.ObjectId;
 }
 
@@ -17,22 +18,26 @@ const contentSchema = new Schema<IContent>(
     },
     link: {
       type: String,
-      required: [true, "Link is required"],
+      default: "",
     },
     description: {
       type: String,
+      default: "",
     },
     type: {
       type: String,
       required: [true, "Type is required"],
-      enum: ["tweet", "image", "video", "audio", "article"],
+      enum: ["todo", "tweet", "image", "video", "audio", "article"],
     },
-    tags: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Tag",
-      },
-    ],
+    tags: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Tag",
+        },
+      ],
+      default: [],
+    },
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
