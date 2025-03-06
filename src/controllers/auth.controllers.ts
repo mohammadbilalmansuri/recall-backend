@@ -31,9 +31,7 @@ export const signupUser = asyncHandler(async (req, res) => {
 
   const isUserExist = await User.findOne({ email }).lean();
 
-  if (isUserExist) {
-    throw new ApiError(400, "User already exists");
-  }
+  if (isUserExist) throw new ApiError(400, "User already exists");
 
   const createdUser = await User.create({ name, email, password });
 
@@ -53,9 +51,7 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
 
-  if (!user) {
-    throw new ApiError(400, "User not found");
-  }
+  if (!user) throw new ApiError(400, "User not found");
 
   const isPasswordMatch = await user.comparePassword(password);
 
@@ -114,9 +110,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     req.header("Authorization")?.replace("Bearer ", "") ||
     req.body.refreshToken;
 
-  if (!token) {
-    throw new ApiError(401, "Refresh token is required.");
-  }
+  if (!token) throw new ApiError(401, "Refresh token is required.");
 
   const decodedToken = jwt.verify(token, REFRESH_TOKEN_SECRET as string);
   const user = await User.findById((decodedToken as JwtPayload)?._id);
@@ -148,21 +142,18 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 export const deleteUser = asyncHandler(async (req, res) => {
   const { password } = validate(deleteUserValidation, req.body);
 
-  if (!password) {
+  if (!password)
     throw new ApiError(400, "Password is required for verification.");
-  }
 
   const user = await User.findById(req.user?.id).select("+password");
 
-  if (!user || !(await user.comparePassword(password))) {
+  if (!user || !(await user.comparePassword(password)))
     throw new ApiError(401, "Invalid password.");
-  }
 
   const deleteResult = await User.deleteOne({ _id: req.user?.id });
 
-  if (deleteResult.deletedCount === 0) {
+  if (deleteResult.deletedCount === 0)
     throw new ApiError(500, "Failed to delete user.");
-  }
 
   await Content.deleteMany({ owner: req.user?.id });
 

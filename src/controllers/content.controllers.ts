@@ -49,13 +49,10 @@ export const addContent = asyncHandler(async (req, res) => {
 export const deleteContent = asyncHandler(async (req, res) => {
   const contentId = req.params.id;
   const content = await Content.findOne({ _id: contentId });
-  if (!content) {
-    throw new ApiError(404, "Content not found");
-  }
+  if (!content) throw new ApiError(404, "Content not found");
 
-  if (content.owner.toString() !== req.user?.id) {
+  if (content.owner.toString() !== req.user?.id)
     throw new ApiError(403, "You are not authorized to delete this content");
-  }
 
   await Content.deleteOne({ _id: contentId });
   return new ApiResponse(200, "Content deleted successfully").send(res);
@@ -67,9 +64,8 @@ export const getContents = asyncHandler(async (req, res) => {
     select: "name email",
   });
 
-  if (contents.length === 0) {
+  if (contents.length === 0)
     return new ApiResponse(200, "No content found", []).send(res);
-  }
 
   return new ApiResponse(200, "Content fetched successfully", contents).send(
     res

@@ -8,9 +8,8 @@ const verifyAccess = (req: Request, _: Response, next: NextFunction) => {
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer ", "");
 
-  if (!token) {
+  if (!token)
     throw new ApiError(401, "Unauthorized request! No token provided");
-  }
 
   jwt.verify(
     token,
