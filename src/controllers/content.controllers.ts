@@ -6,12 +6,31 @@ import validate from "../utils/validate";
 import contentValidation from "../validations/content.validation";
 import Tag from "../models/tag.model";
 import { Schema } from "mongoose";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const addContent = asyncHandler(async (req, res) => {
-  const { title, link, description, tags, type } = validate(
+  const { title, description, link, type, tags, pdf } = validate(
     contentValidation,
     req.body
   );
+
+  let embeddings: number[] = [];
+
+  switch (type) {
+    case "tweet":
+      if (!link) throw new ApiError(400, "Tweet link is required");
+      break;
+    case "youtube":
+      if (!link) throw new ApiError(400, "Youtube link is required");
+      break;
+    case "pdf":
+      if (!pdf) throw new ApiError(400, "PDF is required");
+      break;
+    case "todo":
+      break;
+    default:
+      throw new ApiError(400, "Invalid content type");
+  }
 
   const tagIds: Schema.Types.ObjectId[] = [];
 
@@ -32,11 +51,12 @@ export const addContent = asyncHandler(async (req, res) => {
 
   const createdContent = await Content.create({
     title,
+    description: description || "",
     link: link || "",
     type,
-    description: description || "",
     tags: tagIds,
     owner: req.user?.id,
+    embeddings,
   });
 
   return new ApiResponse(
@@ -46,15 +66,16 @@ export const addContent = asyncHandler(async (req, res) => {
   ).send(res);
 });
 
+export const getContent = asyncHandler(async (req, res) => {
+  const content = req.content;
+  return new ApiResponse(200, "Content fetched successfully", content).send(
+    res
+  );
+});
+
 export const deleteContent = asyncHandler(async (req, res) => {
-  const contentId = req.params.id;
-  const content = await Content.findOne({ _id: contentId });
-  if (!content) throw new ApiError(404, "Content not found");
-
-  if (content.owner.toString() !== req.user?.id)
-    throw new ApiError(403, "You are not authorized to delete this content");
-
-  await Content.deleteOne({ _id: contentId });
+  const content = req.content;
+  await content?.deleteOne();
   return new ApiResponse(200, "Content deleted successfully").send(res);
 });
 
@@ -64,10 +85,11 @@ export const getContents = asyncHandler(async (req, res) => {
     select: "name email",
   });
 
-  if (contents.length === 0)
+  if (contents.length === 0) {
     return new ApiResponse(200, "No content found", []).send(res);
+  }
 
-  return new ApiResponse(200, "Content fetched successfully", contents).send(
+  return new ApiResponse(200, "Contents fetched successfully", contents).send(
     res
   );
 });

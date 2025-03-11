@@ -2,14 +2,17 @@ import { Router } from "express";
 import {
   getContents,
   addContent,
+  getContent,
   deleteContent,
 } from "../controllers/content.controllers";
 import authMiddleware from "../middlewares/auth.middleware";
+import validateContent from "../middlewares/content.middleware";
 
 const contentRoutes = Router();
 
-contentRoutes.get("/", authMiddleware, getContents);
 contentRoutes.post("/", authMiddleware, addContent);
-contentRoutes.delete("/:id", authMiddleware, deleteContent);
+contentRoutes.get("/:id", authMiddleware, validateContent, getContent);
+contentRoutes.delete("/:id", authMiddleware, validateContent, deleteContent);
+contentRoutes.get("/", authMiddleware, getContents);
 
 export default contentRoutes;
