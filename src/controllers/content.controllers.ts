@@ -79,7 +79,7 @@ export const deleteContent = asyncHandler(async (req, res) => {
   return new ApiResponse(200, "Content deleted successfully").send(res);
 });
 
-export const getContents = asyncHandler(async (req, res) => {
+export const fetchContents = asyncHandler(async (req, res) => {
   const contents = await Content.find({ owner: req.user?.id }).populate({
     path: "owner",
     select: "name email",
