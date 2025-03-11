@@ -7,6 +7,7 @@ import {
   REFRESH_TOKEN_SECRET,
   REFRESH_TOKEN_EXPIRY,
 } from "../constants";
+import ApiError from "../utils/ApiError";
 
 export interface IUser extends Document {
   name: string;
@@ -60,7 +61,13 @@ userSchema.pre<IUser>("save", async function (next) {
 userSchema.methods.comparePassword = async function (
   password: string
 ): Promise<boolean> {
-  return await argon2.verify(this.password, password);
+  try {
+    return await argon2.verify(this.password, password);
+  } catch (error) {
+    throw new ApiError(500, "Internal Server Error", [
+      (error as Error).message,
+    ]);
+  }
 };
 
 userSchema.methods.generateAccessToken = function (): string {

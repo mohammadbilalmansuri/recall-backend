@@ -1,6 +1,6 @@
 import { model, Schema, Document } from "mongoose";
 
-interface ITag extends Document {
+export interface ITag extends Document {
   name: string;
 }
 
@@ -8,7 +8,7 @@ const tagSchema = new Schema<ITag>(
   {
     name: {
       type: String,
-      required: [true, "Title is required"],
+      required: [true, "Name is required"],
       unique: true,
     },
   },

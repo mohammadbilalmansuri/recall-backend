@@ -1,7 +1,7 @@
 import argon2, { argon2id } from "argon2";
 import { model, Schema, Document } from "mongoose";
 
-interface IShare extends Document {
+export interface IShare extends Document {
   hash?: string;
   owner: Schema.Types.ObjectId;
   compareHash: (hash: string) => Promise<boolean>;
@@ -40,7 +40,11 @@ shareSchema.pre<IShare>("save", async function (next) {
 shareSchema.methods.compareHash = async function (
   hash: string
 ): Promise<boolean> {
-  return await argon2.verify(this.hash, hash);
+  try {
+    return await argon2.verify(this.hash, hash);
+  } catch (error) {
+    throw new Error("Hash comparison failed");
+  }
 };
 
 const Share = model<IShare>("Share", shareSchema);
