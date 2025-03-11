@@ -10,7 +10,7 @@ import {
 } from "../validations/user.validation";
 import User, { IUser } from "../models/user.model";
 import Content from "../models/content.model";
-import { REFRESH_TOKEN_SECRET } from "../constants";
+import { REFRESH_TOKEN_SECRET, COOKIE_OPTIONS } from "../constants";
 
 const generateAccessAndRefreshTokens = async (user: IUser) => {
   try {
@@ -31,7 +31,9 @@ export const signupUser = asyncHandler(async (req, res) => {
 
   const isUserExist = await User.findOne({ email }).lean();
 
-  if (isUserExist) throw new ApiError(400, "User already exists");
+  if (isUserExist) {
+    throw new ApiError(400, "User already exists");
+  }
 
   const createdUser = await User.create({ name, email, password });
 
@@ -51,7 +53,9 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
 
-  if (!user) throw new ApiError(400, "User not found");
+  if (!user) {
+    throw new ApiError(400, "User not found");
+  }
 
   const isPasswordMatch = await user.comparePassword(password);
 
@@ -73,15 +77,15 @@ export const loginUser = asyncHandler(async (req, res) => {
     refreshToken,
   };
 
-  const options = {
-    httpOnly: true,
-    // secure: true,
-    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-  };
-
   res
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options);
+    .cookie("accessToken", accessToken, {
+      ...COOKIE_OPTIONS,
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
+    })
+    .cookie("refreshToken", refreshToken, {
+      ...COOKIE_OPTIONS,
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+    });
 
   return new ApiResponse(200, "User logged in successfully", responseData).send(
     res
@@ -95,13 +99,38 @@ export const logoutUser = asyncHandler(async (req, res) => {
     { new: true }
   );
 
-  const options = {
-    httpOnly: true,
-    // secure: true,
-  };
+  res
+    .clearCookie("accessToken", COOKIE_OPTIONS)
+    .clearCookie("refreshToken", COOKIE_OPTIONS);
+  return new ApiResponse(200, "User logged out successfully").send(res);
+});
 
-  res.clearCookie("accessToken", options).clearCookie("refreshToken", options);
-  return new ApiResponse(200, "Logout successful.").send(res);
+export const deleteUser = asyncHandler(async (req, res) => {
+  const { password } = validate(deleteUserValidation, req.body);
+
+  if (!password) {
+    throw new ApiError(400, "Password is required for verification");
+  }
+
+  const user = await User.findById(req.user?.id).select("+password");
+
+  if (!user || !(await user.comparePassword(password))) {
+    throw new ApiError(401, "Invalid password.");
+  }
+
+  const deleteResult = await User.deleteOne({ _id: req.user?.id });
+
+  if (deleteResult.deletedCount === 0) {
+    throw new ApiError(500, "Failed to delete user");
+  }
+
+  await Content.deleteMany({ owner: req.user?.id });
+
+  res
+    .clearCookie("accessToken", COOKIE_OPTIONS)
+    .clearCookie("refreshToken", COOKIE_OPTIONS);
+
+  return new ApiResponse(200, "User deleted successfully").send(res);
 });
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -110,58 +139,44 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     req.header("Authorization")?.replace("Bearer ", "") ||
     req.body.refreshToken;
 
-  if (!token) throw new ApiError(401, "Refresh token is required.");
-
-  const decodedToken = jwt.verify(token, REFRESH_TOKEN_SECRET as string);
-  const user = await User.findById((decodedToken as JwtPayload)?._id);
-
-  if (!user || token !== user?.refreshToken) {
-    throw new ApiError(401, "Invalid or expired refresh token.");
+  if (!token) {
+    throw new ApiError(401, "No refresh token provided");
   }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    user
-  );
+  try {
+    const decodedToken = jwt.verify(
+      token,
+      REFRESH_TOKEN_SECRET as string
+    ) as JwtPayload;
 
-  const options = {
-    httpOnly: true,
-    // secure: true,
-    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
-  };
+    const user = await User.findById(decodedToken._id);
 
-  res
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options);
+    if (!user || token !== user?.refreshToken) {
+      throw new ApiError(401, "Invalid or expired refresh token");
+    }
 
-  return new ApiResponse(200, "Access token refreshed successfully.", {
-    accessToken,
-    refreshToken,
-  }).send(res);
-});
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user
+    );
 
-export const deleteUser = asyncHandler(async (req, res) => {
-  const { password } = validate(deleteUserValidation, req.body);
+    res.cookie("accessToken", accessToken, {
+      ...COOKIE_OPTIONS,
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
+    });
+    res.cookie("refreshToken", refreshToken, {
+      ...COOKIE_OPTIONS,
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+    });
 
-  if (!password)
-    throw new ApiError(400, "Password is required for verification.");
+    return new ApiResponse(200, "Access token refreshed", {
+      accessToken,
+      refreshToken,
+    }).send(res);
+  } catch (error) {
+    res
+      .clearCookie("accessToken", COOKIE_OPTIONS)
+      .clearCookie("refreshToken", COOKIE_OPTIONS);
 
-  const user = await User.findById(req.user?.id).select("+password");
-
-  if (!user || !(await user.comparePassword(password)))
-    throw new ApiError(401, "Invalid password.");
-
-  const deleteResult = await User.deleteOne({ _id: req.user?.id });
-
-  if (deleteResult.deletedCount === 0)
-    throw new ApiError(500, "Failed to delete user.");
-
-  await Content.deleteMany({ owner: req.user?.id });
-
-  const options = {
-    httpOnly: true,
-    // secure: true,
-  };
-
-  res.clearCookie("accessToken", options).clearCookie("refreshToken", options);
-  return new ApiResponse(200, "User deleted successfully.").send(res);
+    throw new ApiError(401, "Invalid refresh token");
+  }
 });
