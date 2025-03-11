@@ -1,13 +1,13 @@
-import { model, Schema, Document, Types } from "mongoose";
-import Tag from "./tag.model";
+import { model, Schema, Document } from "mongoose";
 
 export interface IContent extends Document {
   title: string;
-  link?: string;
   description?: string;
-  type: "todo" | "tweet" | "image" | "video" | "audio" | "article";
+  link?: string;
+  type: "todo" | "tweet" | "youtube" | "pdf";
   tags?: Schema.Types.ObjectId[];
   owner: Schema.Types.ObjectId;
+  embeddings?: number[];
 }
 
 const contentSchema = new Schema<IContent>(
@@ -27,7 +27,7 @@ const contentSchema = new Schema<IContent>(
     type: {
       type: String,
       required: [true, "Type is required"],
-      enum: ["todo", "tweet", "image", "video", "audio", "article"],
+      enum: ["todo", "tweet", "youtube", "pdf"],
     },
     tags: {
       type: [
@@ -42,6 +42,10 @@ const contentSchema = new Schema<IContent>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Owner is required"],
+    },
+    embeddings: {
+      type: [Number],
+      default: [],
     },
   },
   { timestamps: true }
