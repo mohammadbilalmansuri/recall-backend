@@ -20,3 +20,8 @@ export const COOKIE_OPTIONS = {
 //   process.env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()) || [];
 
 export const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY);
+
+export const CLOUDINARY_CLOUD_NAME = String(process.env.CLOUDINARY_CLOUD_NAME);
+export const CLOUDINARY_API_KEY = String(process.env.CLOUDINARY_API_KEY);
+export const CLOUDINARY_API_SECRET = String(process.env.CLOUDINARY_API_SECRET);
+export const CLOUDINARY_FOLDER = String(process.env.CLOUDINARY_FOLDER);
