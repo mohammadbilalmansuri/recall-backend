@@ -6,30 +6,59 @@ import validate from "../utils/validate";
 import contentValidation from "../validations/content.validation";
 import Tag from "../models/tag.model";
 import { Schema } from "mongoose";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import pinconeIndex from "../db/pinecone.db";
+import getTweet from "../services/twitter.service";
+import getYoutubeTranscript from "../services/youtube.service";
+import getPdfData from "../services/pdf.service";
+import generateEmbeddings from "../services/embeddings.service";
+import { uploadOnCloudinary } from "../services/cloudinary";
 
 export const addContent = asyncHandler(async (req, res) => {
-  const { title, description, link, type, tags, pdf } = validate(
-    contentValidation,
-    req.body
-  );
+  let { title, description, link, type, tags } = validate(contentValidation, {
+    ...req.body,
+    tags: req.body.tags?.split(","),
+  });
 
   let embeddings: number[] = [];
+  let contentText = "";
 
   switch (type) {
+    case "todo":
+      contentText = description || "";
+      break;
     case "tweet":
       if (!link) throw new ApiError(400, "Tweet link is required");
+      contentText = await getTweet(link);
       break;
     case "youtube":
-      if (!link) throw new ApiError(400, "Youtube link is required");
+      if (!link) throw new ApiError(400, "YouTube link is required");
+      contentText = (await getYoutubeTranscript(link)) || "";
       break;
     case "pdf":
-      if (!pdf) throw new ApiError(400, "PDF is required");
-      break;
-    case "todo":
+      if (!req.file) throw new ApiError(400, "PDF file is required");
+
+      contentText = await getPdfData(req.file.path);
+
+      const cloudinaryResponse = await uploadOnCloudinary(req.file.path);
+      if (!cloudinaryResponse) throw new ApiError(500, "PDF upload failed");
+
+      link = cloudinaryResponse.secure_url;
+
       break;
     default:
       throw new ApiError(400, "Invalid content type");
+  }
+
+  const tagsText = tags && tags.length > 0 ? tags.join(" ") : "";
+  const enrichedText = [title, description || "", tagsText, contentText]
+    .filter(Boolean)
+    .join("\n\n");
+
+  if (enrichedText) {
+    const generatedEmbeddings = await generateEmbeddings(enrichedText);
+    if (generatedEmbeddings) {
+      embeddings = generatedEmbeddings;
+    }
   }
 
   const tagIds: Schema.Types.ObjectId[] = [];
@@ -37,10 +66,9 @@ export const addContent = asyncHandler(async (req, res) => {
   if (tags && tags.length > 0) {
     await Promise.all(
       tags.map(async (tag) => {
-        const isTagAlreadyExist = await Tag.findOne({ name: tag }).lean();
-
-        if (isTagAlreadyExist) {
-          tagIds.push(isTagAlreadyExist._id as Schema.Types.ObjectId);
+        const existingTag = await Tag.findOne({ name: tag }).lean();
+        if (existingTag) {
+          tagIds.push(existingTag._id as Schema.Types.ObjectId);
         } else {
           const newTag = await Tag.create({ name: tag });
           tagIds.push(newTag.id);
@@ -49,7 +77,7 @@ export const addContent = asyncHandler(async (req, res) => {
     );
   }
 
-  const createdContent = await Content.create({
+  const content = await Content.create({
     title,
     description: description || "",
     link: link || "",
@@ -57,13 +85,29 @@ export const addContent = asyncHandler(async (req, res) => {
     tags: tagIds,
     owner: req.user?.id,
     embeddings,
+    content: contentText,
   });
 
-  return new ApiResponse(
-    201,
-    "Content added successfully",
-    createdContent
-  ).send(res);
+  const response = {
+    title: content.title,
+    description: content.description || "",
+    link: content.link || "",
+    type: content.type,
+    tags: tags || [],
+  };
+
+  await pinconeIndex.namespace("contents").upsert([
+    {
+      id: String(content._id),
+      values: embeddings,
+      metadata: {
+        ...response,
+        content: contentText,
+      },
+    },
+  ]);
+
+  return new ApiResponse(201, "Content added successfully", response).send(res);
 });
 
 export const getContent = asyncHandler(async (req, res) => {
