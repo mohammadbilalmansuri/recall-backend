@@ -8,6 +8,7 @@ export interface IContent extends Document {
   tags?: Schema.Types.ObjectId[];
   owner: Schema.Types.ObjectId;
   embeddings?: number[];
+  content?: string;
 }
 
 const contentSchema = new Schema<IContent>(
@@ -46,6 +47,10 @@ const contentSchema = new Schema<IContent>(
     embeddings: {
       type: [Number],
       default: [],
+    },
+    content: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }
