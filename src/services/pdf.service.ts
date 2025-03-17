@@ -1,25 +1,20 @@
 import fs from "fs";
 import pdf from "pdf-parse";
-import axios from "axios";
 import Tesseract from "tesseract.js";
-import { fromBuffer } from "pdf2pic";
+import { fromPath } from "pdf2pic";
 
-const loadPdfBuffer = async (url: string): Promise<Buffer> => {
-  if (url.startsWith("http")) {
-    const response = await axios.get(url, { responseType: "arraybuffer" });
-    return Buffer.from(response.data);
-  } else {
-    return fs.readFileSync(url);
-  }
+const loadPdfBuffer = (filePath: string): Buffer => {
+  return fs.readFileSync(filePath);
 };
 
-const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
-  const converter = fromBuffer(pdfBuffer, {
+const convertPdfToImages = async (filePath: string): Promise<string[]> => {
+  const converter = fromPath(filePath, {
     density: 300,
     savePath: "./",
     format: "png",
   });
-  const pages = await pdf(pdfBuffer);
+
+  const pages = await pdf(loadPdfBuffer(filePath));
   const imagePaths: string[] = [];
 
   for (let i = 1; i <= pages.numpages; i++) {
@@ -42,21 +37,18 @@ const cleanText = (text: string): string => {
     .trim();
 };
 
-const getPdfData = async (url: string): Promise<string> => {
+const getPdfData = async (filePath: string): Promise<string> => {
   try {
-    // Step 1: Load PDF
-    const dataBuffer = await loadPdfBuffer(url);
-
-    // Step 2: Try extracting text directly
-    const pdfData = await pdf(dataBuffer);
+    const pdfBuffer = loadPdfBuffer(filePath);
+    const pdfData = await pdf(pdfBuffer);
     if (pdfData.text.trim()) {
       return cleanText(pdfData.text);
     }
 
     console.log("No extractable text found, using OCR...");
 
-    // Step 3: Convert PDF to images & apply OCR
-    const images = await convertPdfToImages(dataBuffer);
+    // Step 2: Convert PDF to images & apply OCR
+    const images = await convertPdfToImages(filePath);
     const ocrTexts = await Promise.all(images.map(extractTextFromImage));
 
     return cleanText(ocrTexts.join("\n"));
