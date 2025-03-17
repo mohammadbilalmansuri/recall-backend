@@ -12,7 +12,6 @@ const contentValidation = z.object({
   link: z.string().url("Please enter a valid URL.").optional(),
   type: z.enum(["todo", "tweet", "youtube", "pdf"]),
   tags: z.array(z.string()).optional(),
-  pdf: z.instanceof(File).optional(),
 });
 
 export default contentValidation;
