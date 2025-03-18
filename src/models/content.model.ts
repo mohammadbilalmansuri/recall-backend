@@ -7,8 +7,7 @@ export interface IContent extends Document {
   type: "todo" | "tweet" | "youtube" | "pdf";
   tags?: Schema.Types.ObjectId[];
   owner: Schema.Types.ObjectId;
-  embeddings?: number[];
-  content?: string;
+  chunkText?: string;
 }
 
 const contentSchema = new Schema<IContent>(
@@ -44,11 +43,7 @@ const contentSchema = new Schema<IContent>(
       ref: "User",
       required: [true, "Owner is required"],
     },
-    embeddings: {
-      type: [Number],
-      default: [],
-    },
-    content: {
+    chunkText: {
       type: String,
       default: "",
     },
