@@ -1,11 +1,11 @@
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs/promises";
 import {
   CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
   CLOUDINARY_FOLDER,
 } from "../constants";
+import ApiError from "../utils/ApiError";
 
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
@@ -20,31 +20,37 @@ interface CloudinaryResponse {
 
 const uploadOnCloudinary = async (
   localFilePath: string
-): Promise<CloudinaryResponse | null> => {
+): Promise<CloudinaryResponse> => {
   try {
-    if (!localFilePath) throw new Error("No file path provided");
+    if (!localFilePath) {
+      throw new ApiError(400, "No file path provided");
+    }
 
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "raw",
       folder: CLOUDINARY_FOLDER,
     });
 
-    await fs.unlink(localFilePath);
     return {
       secure_url: response.secure_url,
       public_id: response.public_id,
     };
   } catch (error) {
-    console.error("Cloudinary Upload Error:", error);
-    await fs.unlink(localFilePath).catch(() => null);
-    return null;
+    throw new ApiError(
+      500,
+      `Cloudinary Upload Error: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
 };
 
 const deleteFromCloudinary = async (url: string): Promise<boolean> => {
   try {
     const publicId = url.split("/").pop()?.split(".")[0];
-    if (!publicId) throw new Error("Invalid URL format");
+    if (!publicId) {
+      throw new ApiError(400, "Invalid URL format");
+    }
 
     await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
     return true;
