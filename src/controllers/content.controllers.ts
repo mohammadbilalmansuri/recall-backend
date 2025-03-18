@@ -11,7 +11,7 @@ import getTweet from "../services/twitter.service";
 import getYoutubeTranscript from "../services/youtube.service";
 import getPdfData from "../services/pdf.service";
 import generateEmbeddings from "../services/embeddings.service";
-import { uploadOnCloudinary } from "../services/cloudinary";
+import { uploadOnCloudinary } from "../services/cloudinary.service";
 
 export const addContent = asyncHandler(async (req, res) => {
   let { title, description, link, type, tags } = validate(contentValidation, {
