@@ -6,7 +6,7 @@ import validate from "../utils/validate";
 import contentValidation from "../validations/content.validation";
 import Tag from "../models/tag.model";
 import { Schema } from "mongoose";
-import pinconeIndex from "../db/pinecone.db";
+import pineconeNamespace from "../db/pinecone.db";
 import getTweet from "../services/twitter.service";
 import getYoutubeTranscript from "../services/youtube.service";
 import getPdfData from "../services/pdf.service";
@@ -88,26 +88,25 @@ export const addContent = asyncHandler(async (req, res) => {
     content: contentText,
   });
 
-  const response = {
-    title: content.title,
-    description: content.description || "",
-    link: content.link || "",
-    type: content.type,
-    tags: tags || [],
-  };
-
-  await pinconeIndex.namespace("contents").upsert([
+  await pineconeNamespace.upsert([
     {
       id: String(content._id),
       values: embeddings,
       metadata: {
-        ...response,
+        title: content.title,
+        link: content.link || "",
+        type: content.type,
         content: contentText,
+        ...(description && { description }),
+        ...(tags && { tags }),
       },
     },
   ]);
 
-  return new ApiResponse(201, "Content added successfully", response).send(res);
+  return new ApiResponse(201, "Content added successfully", {
+    ...content.toObject(),
+    tags: tags || [],
+  }).send(res);
 });
 
 export const getContent = asyncHandler(async (req, res) => {
