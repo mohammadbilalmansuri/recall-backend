@@ -16,8 +16,8 @@ export const COOKIE_OPTIONS = {
   // secure: true,
   // sameSite: "None",
 };
-// export const ALLOWED_ORIGINS =
-//   process.env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()) || [];
+export const ALLOWED_ORIGINS =
+  process.env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()) || [];
 
 export const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY);
 

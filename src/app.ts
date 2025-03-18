@@ -1,3 +1,4 @@
+import { ALLOWED_ORIGINS } from "./constants";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -5,7 +6,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "*",
+    origin: ALLOWED_ORIGINS,
     credentials: true,
   })
 );
