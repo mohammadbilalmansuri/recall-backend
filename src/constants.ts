@@ -2,7 +2,7 @@ export const PORT = Number(process.env.PORT) || 8000;
 export const MONGODB_CONNECTION_STRING = `${process.env.MONGODB_URI}/${process.env.MONGODB_NAME}`;
 
 export const PINECONE_API_KEY = String(process.env.PINECONE_API_KEY);
-export const PINECONE_INDEX_NAME = String(process.env.PINECONE_INDEX_NAME);
+export const PINECONE_INDEX = String(process.env.PINECONE_INDEX);
 
 export const ACCESS_TOKEN_SECRET = String(process.env.ACCESS_TOKEN_SECRET);
 export const ACCESS_TOKEN_EXPIRY =

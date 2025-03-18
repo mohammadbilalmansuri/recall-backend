@@ -1,10 +1,8 @@
 import { Pinecone } from "@pinecone-database/pinecone";
-import { PINECONE_API_KEY, PINECONE_INDEX_NAME } from "../constants";
+import { PINECONE_API_KEY, PINECONE_INDEX } from "../constants";
 
-const pc = new Pinecone({
-  apiKey: PINECONE_API_KEY,
-});
+const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
 
-const pinconeIndex = pc.index(PINECONE_INDEX_NAME);
+const pineconeNamespace = pc.index(PINECONE_INDEX).namespace("contents");
 
-export default pinconeIndex;
+export default pineconeNamespace;
