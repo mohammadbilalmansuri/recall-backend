@@ -1,41 +1,41 @@
-import { model, Schema, Document } from "mongoose";
+import { model, Schema, Document, Types } from "mongoose";
+
+export enum ContentType {
+  TODO = "todo",
+  TWEET = "tweet",
+  YOUTUBE = "youtube",
+  PDF = "pdf",
+}
 
 export interface IContent extends Document {
-  title: string;
-  description?: string;
+  text: string;
   link?: string;
-  type: "todo" | "tweet" | "youtube" | "pdf";
-  tags?: Schema.Types.ObjectId[];
-  owner: Schema.Types.ObjectId;
+  type: ContentType;
+  tags?: Types.ObjectId[];
+  owner: Types.ObjectId;
   chunkText?: string;
 }
 
 const contentSchema = new Schema<IContent>(
   {
-    title: {
+    text: {
       type: String,
-      required: [true, "Title is required"],
+      required: [true, "Text is required"],
+      trim: true,
+      minlength: [5, "Text must be at least 5 characters long"],
+      maxlength: [2000, "Text must not exceed 2000 characters"],
     },
     link: {
-      type: String,
-      default: "",
-    },
-    description: {
       type: String,
       default: "",
     },
     type: {
       type: String,
       required: [true, "Type is required"],
-      enum: ["todo", "tweet", "youtube", "pdf"],
+      enum: Object.values(ContentType),
     },
     tags: {
-      type: [
-        {
-          type: Schema.Types.ObjectId,
-          ref: "Tag",
-        },
-      ],
+      type: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
       default: [],
     },
     owner: {
