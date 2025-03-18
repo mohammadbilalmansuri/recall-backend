@@ -17,7 +17,7 @@ const globalErrorHandler: ErrorRequestHandler = (
     return;
   }
 
-  console.error("Unhandled Error: ", err.message);
+  console.error("Unhandled Error: ", err);
   res.status(500).json({
     statusCode: 500,
     message: "Internal Server Error",
