@@ -1,9 +1,9 @@
 import asyncHandler from "../utils/asyncHandler";
 import ApiResponse from "../utils/ApiResponse";
 import ApiError from "../utils/ApiError";
-import Content from "../models/content.model";
+import Content, { ContentType } from "../models/content.model";
 import validate from "../utils/validate";
-import contentValidation from "../validations/content.validation";
+import { contentValidation } from "../validations/content.validation";
 import Tag from "../models/tag.model";
 import { Schema } from "mongoose";
 import pineconeIndex from "../db/pinecone.db";
@@ -34,37 +34,17 @@ const processTags = async (
   return tagIds;
 };
 
-const generateChunkText = (
-  title: string,
-  description: string,
-  link: string,
-  type: string,
-  tags: string[],
-  context: string
-): string => {
-  return `
-    Title: ${title}
-    ${description ? `Description: ${description}` : ""}
-    ${link ? `Link: ${link}` : ""}
-    ${type ? `Type: ${type}` : ""}
-    ${tags?.length ? `Tags: ${tags.join(", ")}` : ""}
-    --- Content Context ---
-    ${context || "N/A"}
-  `.trim();
-};
-
 export const addContent = asyncHandler(async (req, res) => {
   const {
-    title,
     description,
     link: initialLink,
     type,
     tags: rawTags,
   } = validate(contentValidation, {
-    ...req.body,
-    tags: Array.isArray(req.body.tags)
-      ? req.body.tags
-      : req.body.tags?.split(","),
+    description: req.body.description,
+    link: req.body.link,
+    type: req.body.type,
+    tags: req.body.tags ? JSON.parse(req.body.tags) : [],
   });
 
   let link = initialLink;
@@ -72,21 +52,21 @@ export const addContent = asyncHandler(async (req, res) => {
 
   try {
     switch (type) {
-      case "tweet":
+      case ContentType.TWEET:
         if (!link) {
           throw new ApiError(400, "Tweet link is required");
         }
         context = await getTweet(link);
         break;
 
-      case "youtube":
+      case ContentType.YOUTUBE:
         if (!link) {
           throw new ApiError(400, "YouTube link is required");
         }
         context = (await getYoutubeTranscript(link)) || "";
         break;
 
-      case "pdf":
+      case ContentType.PDF:
         if (!req.file) {
           throw new ApiError(400, "PDF file is required");
         }
@@ -101,7 +81,7 @@ export const addContent = asyncHandler(async (req, res) => {
         await fs.unlink(req.file.path);
         break;
 
-      case "todo":
+      case ContentType.TODO:
         break;
 
       default:
@@ -117,23 +97,23 @@ export const addContent = asyncHandler(async (req, res) => {
   }
 
   const tagIds = await processTags(rawTags || []);
-  const chunkText = generateChunkText(
-    title,
-    description || "",
-    link || "",
-    type,
-    rawTags || [],
-    context
-  );
+  const chunkText = `
+    Description: ${description || "N/A"}
+    Link: ${link || "N/A"}
+    Type: ${type || "N/A"}
+    Tags: ${rawTags || "N/A"}
+
+    --- Content Context ---
+    ${context || "N/A"}
+  `.trim();
 
   const content = await Content.create({
-    title,
-    description: description || "",
+    description,
     link: link || "",
     type,
     tags: tagIds,
     owner: req.user?.id,
-    chunkText,
+    context,
   });
 
   await pineconeIndex.upsertRecords([
@@ -146,7 +126,7 @@ export const addContent = asyncHandler(async (req, res) => {
 
   return new ApiResponse(201, "Content added successfully", {
     ...content.toObject(),
-    tags: rawTags || [],
+    tags: rawTags,
   }).send(res);
 });
 
