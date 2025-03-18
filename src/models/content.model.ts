@@ -8,22 +8,22 @@ export enum ContentType {
 }
 
 export interface IContent extends Document {
-  text: string;
+  description: string;
   link?: string;
   type: ContentType;
   tags?: Types.ObjectId[];
   owner: Types.ObjectId;
-  chunkText?: string;
+  context?: string;
 }
 
 const contentSchema = new Schema<IContent>(
   {
-    text: {
+    description: {
       type: String,
-      required: [true, "Text is required"],
+      required: [true, "Description is required"],
       trim: true,
-      minlength: [5, "Text must be at least 5 characters long"],
-      maxlength: [2000, "Text must not exceed 2000 characters"],
+      minlength: [5, "Description must be at least 5 characters long"],
+      maxlength: [2000, "Description must not exceed 2000 characters"],
     },
     link: {
       type: String,
@@ -43,9 +43,9 @@ const contentSchema = new Schema<IContent>(
       ref: "User",
       required: [true, "Owner is required"],
     },
-    chunkText: {
+    context: {
       type: String,
-      default: "",
+      default: null,
     },
   },
   { timestamps: true }
