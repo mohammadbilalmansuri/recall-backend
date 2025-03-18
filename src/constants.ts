@@ -3,6 +3,7 @@ export const MONGODB_CONNECTION_STRING = `${process.env.MONGODB_URI}/${process.e
 
 export const PINECONE_API_KEY = String(process.env.PINECONE_API_KEY);
 export const PINECONE_INDEX = String(process.env.PINECONE_INDEX);
+export const PINECONE_HOST_URL = String(process.env.PINECONE_HOST_URL);
 
 export const ACCESS_TOKEN_SECRET = String(process.env.ACCESS_TOKEN_SECRET);
 export const ACCESS_TOKEN_EXPIRY =
