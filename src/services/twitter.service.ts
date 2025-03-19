@@ -7,23 +7,26 @@ const httpClient = axios.create({
   headers: { "User-Agent": "Mozilla/5.0" },
 });
 
-async function getTweet(tweetUrl: string): Promise<string> {
+async function getTweetData(tweetUrl: string): Promise<string> {
   try {
-    const { data } = await httpClient.get("", {
-      params: { url: tweetUrl },
-    });
+    const { data } = await httpClient.get("", { params: { url: tweetUrl } });
+
+    if (!data.html) {
+      return "Server could not retrieve tweet content.";
+    }
 
     const $ = cheerio.load(data.html);
-    const cleanText = $("p").text().trim();
+    let tweetText = $("p").text().trim();
 
-    return cleanText || "No tweet text found!";
+    // Fallback: Remove HTML tags if <p> is missing
+    if (!tweetText) {
+      tweetText = data.html.replace(/<\/?[^>]+(>|$)/g, "").trim();
+    }
+
+    return tweetText || "Server could not retrieve tweet content.";
   } catch (error: any) {
-    console.error(
-      "Error fetching tweet:",
-      error.response?.status || error.message
-    );
-    return "Error fetching tweet!";
+    return "Server could not retrieve tweet content.";
   }
 }
 
-export default getTweet;
+export default getTweetData;
