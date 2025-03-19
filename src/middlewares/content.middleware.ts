@@ -11,14 +11,11 @@ const validateContent = async (
   try {
     const { id } = req.params;
 
-    if (!isValidObjectId(id)) {
+    if (!isValidObjectId(id))
       return next(new ApiError(400, "Invalid content ID format"));
-    }
 
     const content = await Content.findById(id);
-    if (!content) {
-      return next(new ApiError(404, "Content not found"));
-    }
+    if (!content) return next(new ApiError(404, "Content not found"));
 
     if (content.owner.toString() !== req.user?.id) {
       return next(
@@ -29,9 +26,9 @@ const validateContent = async (
     req.content = content;
     next();
   } catch (error) {
-    throw new ApiError(500, "Internal Server Error", [
-      (error as Error).message,
-    ]);
+    next(
+      new ApiError(500, "Internal Server Error", [(error as Error).message])
+    );
   }
 };
 
