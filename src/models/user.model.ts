@@ -1,5 +1,5 @@
 import { model, Schema, Document } from "mongoose";
-import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import argon2, { argon2id } from "argon2";
 import {
   ACCESS_TOKEN_SECRET,
@@ -74,17 +74,13 @@ userSchema.methods.comparePassword = async function (
 };
 
 userSchema.methods.generateAccessToken = function (): string {
-  return jwt.sign(
-    { _id: this._id, email: this.email },
-    ACCESS_TOKEN_SECRET as Secret,
-    {
-      expiresIn: ACCESS_TOKEN_EXPIRY as SignOptions["expiresIn"],
-    }
-  );
+  return jwt.sign({ id: this._id, email: this.email }, ACCESS_TOKEN_SECRET, {
+    expiresIn: ACCESS_TOKEN_EXPIRY as SignOptions["expiresIn"],
+  });
 };
 
 userSchema.methods.generateRefreshToken = function (): string {
-  return jwt.sign({ _id: this._id }, REFRESH_TOKEN_SECRET as Secret, {
+  return jwt.sign({ id: this._id }, REFRESH_TOKEN_SECRET, {
     expiresIn: REFRESH_TOKEN_EXPIRY as SignOptions["expiresIn"],
   });
 };
