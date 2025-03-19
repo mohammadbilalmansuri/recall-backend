@@ -1,13 +1,13 @@
 import { YoutubeTranscript } from "youtube-transcript";
 
-const getYoutubeTranscript = async (url: string) => {
+const getYoutubeVideoTranscript = async (url: string): Promise<string> => {
   try {
     const response = await YoutubeTranscript.fetchTranscript(url);
-    const transcript = response.map((entry) => entry.text).join("\n");
-    return transcript;
+    return response.map((entry) => entry.text).join(" ");
   } catch (error) {
     console.error("Error fetching transcript:", error);
+    return "Transcript not available due to missing subtitles or video restrictions.";
   }
 };
 
-export default getYoutubeTranscript;
+export default getYoutubeVideoTranscript;
