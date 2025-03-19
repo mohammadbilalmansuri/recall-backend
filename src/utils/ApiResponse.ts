@@ -1,17 +1,21 @@
 import { Response } from "express";
+import { COOKIE_OPTIONS } from "../constants";
 
-class ApiResponse<T = Record<string, string | object | string | object[]>> {
+class ApiResponse<
+  TData = Record<string, unknown>,
+  TMeta = Record<string, unknown>
+> {
   status: number;
   message: string;
-  data: T | null;
-  metadata: T | null;
+  data: TData | null;
+  metadata: TMeta | null;
   success: boolean;
 
   constructor(
     status: number,
     message = "Success",
-    data: T | null = null,
-    metadata: T | null = null
+    data: TData | null = null,
+    metadata: TMeta | null = null
   ) {
     this.status = status;
     this.message = message;
@@ -27,6 +31,24 @@ class ApiResponse<T = Record<string, string | object | string | object[]>> {
       ...(this.data ? { data: this.data } : {}),
       ...(this.metadata ? { metadata: this.metadata } : {}),
       success: this.success,
+    });
+  }
+
+  setCookies(
+    res: Response,
+    cookies: { name: string; value: string; expires?: Date }[]
+  ) {
+    cookies.forEach(({ name, value, expires }) => {
+      res.cookie(name, value, {
+        ...COOKIE_OPTIONS,
+        ...(expires ? { expires } : {}),
+      });
+    });
+  }
+
+  clearCookies(res: Response, cookies: string[]) {
+    cookies.forEach((cookie) => {
+      res.clearCookie(cookie, COOKIE_OPTIONS);
     });
   }
 }
