@@ -12,11 +12,16 @@ export const REFRESH_TOKEN_SECRET = String(process.env.REFRESH_TOKEN_SECRET);
 export const REFRESH_TOKEN_EXPIRY =
   String(process.env.REFRESH_TOKEN_EXPIRY) || "7d";
 
-export const COOKIE_OPTIONS = {
+export const COOKIE_OPTIONS: {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite?: "none" | "strict" | "lax";
+} = {
   httpOnly: true,
-  // secure: true,
-  // sameSite: "None",
+  secure: true,
+  sameSite: "none",
 };
+
 export const ALLOWED_ORIGINS =
   process.env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()) || [];
 
