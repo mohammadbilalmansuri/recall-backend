@@ -1,7 +1,7 @@
 import ApiError from "../utils/ApiError";
 import { IUser } from "../models/user.model";
 
-const generateAccessAndRefreshTokens = async (user: IUser) => {
+const generateTokens = async (user: IUser) => {
   try {
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
@@ -15,4 +15,4 @@ const generateAccessAndRefreshTokens = async (user: IUser) => {
   }
 };
 
-export default generateAccessAndRefreshTokens;
+export default generateTokens;
