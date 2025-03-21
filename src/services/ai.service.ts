@@ -1,10 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GEMINI_API_KEY } from "../constants";
+import { GEMINI_API_KEY, GEMINI_MODEL } from "../constants";
 import ApiError from "../utils/ApiError";
 import { Response } from "express";
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro-exp-02-05" });
+const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 const generateAIResponseStream = async (
   prompt: string,
