@@ -57,7 +57,9 @@ userSchema.pre<IUser>("save", async function (next) {
     });
     next();
   } catch (error) {
-    next(error as Error);
+    next(
+      new ApiError(500, "Internal Server Error", [(error as Error).message])
+    );
   }
 });
 
