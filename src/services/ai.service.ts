@@ -1,69 +1,55 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from "../constants";
+import ApiError from "../utils/ApiError";
+import { Response } from "express";
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro-exp-02-05" });
 
-export const generateEmbeddings = async (
-  input: any
-): Promise<number[] | null> => {
+const generateAIResponseStream = async (
+  prompt: string,
+  context: string = "",
+  res: Response
+) => {
   try {
-    let text: string;
+    if (!prompt.trim()) throw new ApiError(400, "Prompt cannot be empty");
 
-    if (typeof input === "string") {
-      text = input.trim();
-    } else if (typeof input === "number" || typeof input === "boolean") {
-      text = input.toString();
-    } else if (Array.isArray(input) || typeof input === "object") {
-      text = JSON.stringify(input);
-    } else {
-      throw new Error("Unsupported input type for embedding.");
-    }
+    const formattedPrompt = `
+      You are an advanced AI model that generates well-structured and high-quality responses.
 
-    if (!text) {
-      throw new Error("Empty input provided for embedding.");
-    }
+      ### **Context:**
+      ${context.trim() || "No additional context available."}
 
-    const result = await genAI
-      .getGenerativeModel({
-        model: "text-embedding-004",
-      })
-      .embedContent(text);
+      ---
+      ### **Task:**
+      ${prompt.trim()}
 
-    if (!result || !result.embedding) {
-      throw new Error("Failed to generate embeddings.");
-    }
+      ---
+      ### **Instructions:**
+      - Use the provided context to enhance the response.
+      - Ensure the response is **clear, structured, and formatted properly**.
+      - If applicable, use:
+        - Bullet points for lists.
+        - Headings for sections.
+        - Code blocks for technical responses.
+        - JSON format if needed.
 
-    return result.embedding.values;
+      Provide the best possible response with accurate and relevant details.
+    `;
+
+    const result = await model.generateContentStream(formattedPrompt);
+
+    res.setHeader("Content-Type", "text/plain");
+    res.setHeader("Transfer-Encoding", "chunked");
+
+    for await (const chunk of result.stream) res.write(chunk.text());
+    res.end();
   } catch (error) {
-    console.error("Error generating embeddings:", error);
-    return null;
+    res.status(500).json({
+      error: "Failed to generate AI response",
+      details: (error as Error).message,
+    });
   }
 };
 
-// export const generateContent = async (
-//   prompt: string,
-//   savedEmbeddings?: number[]
-// ): Promise<string | null> => {
-//   try {
-//     if (!prompt.trim()) {
-//       throw new Error("Prompt cannot be empty.");
-//     }
-
-//     const result = await genAI
-//       .getGenerativeModel({ model: "gemini-2.0-flash" })
-//       .generateContent(fullPrompt);
-
-//     if (
-//       !result ||
-//       !result.response ||
-//       typeof result.response.text !== "function"
-//     ) {
-//       throw new Error("Failed to generate content.");
-//     }
-
-//     return result.response.text().trim();
-//   } catch (error) {
-//     console.error("Error generating content:", error);
-//     return null;
-//   }
-// };
+export default generateAIResponseStream;
