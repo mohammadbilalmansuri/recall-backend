@@ -61,10 +61,8 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
-  if (!req.user?.id) throw new ApiError(401, "Unauthorized request");
-
   await User.findByIdAndUpdate(
-    req.user.id,
+    req.user?.id,
     { $set: { refreshToken: undefined } },
     { new: true }
   );
@@ -79,21 +77,16 @@ export const deleteUser = asyncHandler(async (req, res) => {
   if (!password)
     throw new ApiError(400, "Password is required for verification");
 
-  if (!req.user?.id) {
-    new ApiResponse(res).clearCookies(["accessToken", "refreshToken"]);
-    throw new ApiError(401, "Unauthorized request");
-  }
-
-  const user = await User.findById(req.user.id).select("+password");
+  const user = await User.findById(req.user?.id).select("+password");
   if (!user || !(await user.comparePassword(password)))
     throw new ApiError(401, "Invalid password");
 
-  const deleteResult = await User.deleteOne({ _id: req.user.id });
+  const deleteResult = await User.deleteOne({ _id: req.user?.id });
   if (deleteResult.deletedCount === 0)
     throw new ApiError(500, "Failed to delete user");
 
-  await Content.deleteMany({ owner: req.user.id });
-  await pineconeIndex.namespace(req.user.id as string).deleteAll();
+  await Content.deleteMany({ owner: req.user?.id });
+  await pineconeIndex.namespace(req.user?.id as string).deleteAll();
 
   new ApiResponse(res, 200, "User deleted successfully")
     .clearCookies(["accessToken", "refreshToken"])
