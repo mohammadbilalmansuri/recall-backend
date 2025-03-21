@@ -10,22 +10,15 @@ const httpClient = axios.create({
 async function getTweetData(tweetUrl: string): Promise<string> {
   try {
     const { data } = await httpClient.get("", { params: { url: tweetUrl } });
-
-    if (!data.html) {
-      return "Server could not retrieve tweet content.";
-    }
+    if (!data.html) return "";
 
     const $ = cheerio.load(data.html);
     let tweetText = $("p").text().trim();
 
-    // Fallback: Remove HTML tags if <p> is missing
-    if (!tweetText) {
-      tweetText = data.html.replace(/<\/?[^>]+(>|$)/g, "").trim();
-    }
-
-    return tweetText || "Server could not retrieve tweet content.";
-  } catch (error: any) {
-    return "Server could not retrieve tweet content.";
+    if (!tweetText) tweetText = data.html.replace(/<\/?[^>]+(>|$)/g, "").trim();
+    return tweetText || "";
+  } catch (error) {
+    return "";
   }
 }
 

@@ -63,17 +63,14 @@ const getPdfData = async (input: string): Promise<string> => {
     if (pdfData.text.trim()) return cleanText(pdfData.text);
 
     const images = await convertPdfToImages(pdfBuffer);
-    if (images.length === 0)
-      return "Server could not retrieve the document content.";
+    if (images.length === 0) return "";
 
     const ocrTexts = await Promise.all(images.map(extractTextFromImage));
     const extractedText = ocrTexts.filter(Boolean).join("\n");
 
-    return extractedText
-      ? cleanText(extractedText)
-      : "Server could not retrieve the document content.";
+    return extractedText ? cleanText(extractedText) : "";
   } catch {
-    return "Server could not retrieve the document content.";
+    return "";
   }
 };
 
