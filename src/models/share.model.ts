@@ -1,5 +1,6 @@
 import argon2, { argon2id } from "argon2";
 import { model, Schema, Document } from "mongoose";
+import ApiError from "../utils/ApiError";
 
 export interface IShare extends Document {
   hash?: string;
@@ -32,8 +33,9 @@ shareSchema.pre<IShare>("save", async function (next) {
     });
     next();
   } catch (error) {
-    console.error("Error in pre-save hook:", error);
-    next(error as Error);
+    next(
+      new ApiError(500, "Internal Server Error", [(error as Error).message])
+    );
   }
 });
 
@@ -43,7 +45,9 @@ shareSchema.methods.compareHash = async function (
   try {
     return await argon2.verify(this.hash, hash);
   } catch (error) {
-    throw new Error("Hash comparison failed");
+    throw new ApiError(500, "Internal Server Error", [
+      (error as Error).message,
+    ]);
   }
 };
 
