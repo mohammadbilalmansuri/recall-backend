@@ -10,7 +10,7 @@ import {
 } from "../validations/user.validation";
 import User from "../models/user.model";
 import Content from "../models/content.model";
-import generateAccessAndRefreshTokens from "../utils/generateAccessAndRefreshTokens";
+import generateTokens from "../utils/generateTokens";
 import { REFRESH_TOKEN_SECRET } from "../constants";
 import pineconeIndex from "../db/pinecone.db";
 
@@ -20,14 +20,12 @@ export const signupUser = asyncHandler(async (req, res) => {
   const isUserExist = await User.findOne({ email }).lean();
   if (isUserExist) throw new ApiError(400, "User already exists");
 
-  const user = await User.create({ name, email, password });
+  const { password: _, ...userWithoutPassword } = (
+    await User.create({ name, email, password })
+  ).toObject();
 
-  return new ApiResponse(res, 201, "User created successfully", {
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    },
+  new ApiResponse(res, 201, "User created successfully", {
+    user: userWithoutPassword,
   }).send();
 });
 
@@ -40,18 +38,12 @@ export const loginUser = asyncHandler(async (req, res) => {
   const isPasswordMatch = await user.comparePassword(password);
   if (!isPasswordMatch) throw new ApiError(400, "Password is incorrect");
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    user
-  );
+  const { accessToken, refreshToken } = await generateTokens(user);
 
-  return new ApiResponse(res, 200, "User logged in successfully", {
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    },
-    accessToken,
-    refreshToken,
+  const { password: _, ...userWithoutPassword } = user.toObject();
+
+  new ApiResponse(res, 200, "User logged in successfully", {
+    user: userWithoutPassword,
   })
     .setCookies([
       {
@@ -69,13 +61,15 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
+  if (!req.user?.id) throw new ApiError(401, "Unauthorized request");
+
   await User.findByIdAndUpdate(
-    req.user?.id,
+    req.user.id,
     { $set: { refreshToken: undefined } },
     { new: true }
   );
 
-  return new ApiResponse(res, 200, "User logged out successfully")
+  new ApiResponse(res, 200, "User logged out successfully")
     .clearCookies(["accessToken", "refreshToken"])
     .send();
 });
@@ -92,7 +86,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user.id).select("+password");
   if (!user || !(await user.comparePassword(password)))
-    throw new ApiError(401, "Invalid password.");
+    throw new ApiError(401, "Invalid password");
 
   const deleteResult = await User.deleteOne({ _id: req.user.id });
   if (deleteResult.deletedCount === 0)
@@ -101,7 +95,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
   await Content.deleteMany({ owner: req.user.id });
   await pineconeIndex.namespace(req.user.id as string).deleteAll();
 
-  return new ApiResponse(res, 200, "User deleted successfully")
+  new ApiResponse(res, 200, "User deleted successfully")
     .clearCookies(["accessToken", "refreshToken"])
     .send();
 });
@@ -117,19 +111,16 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
     const { id } = jwt.verify(token, REFRESH_TOKEN_SECRET) as jwt.JwtPayload & {
       id: string;
-      email: string;
     };
 
     const user = await User.findById(id);
 
-    if (!user || token !== user?.refreshToken)
+    if (!user?.refreshToken || token !== user.refreshToken)
       throw new ApiError(401, "Invalid or expired refresh token");
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-      user
-    );
+    const { accessToken, refreshToken } = await generateTokens(user);
 
-    return new ApiResponse(res, 200, "Access token refreshed", {
+    new ApiResponse(res, 200, "Access token refreshed", {
       accessToken,
       refreshToken,
     })
@@ -148,6 +139,6 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
       .send();
   } catch (error) {
     new ApiResponse(res).clearCookies(["accessToken", "refreshToken"]);
-    throw new ApiError(401, "Invalid refresh token");
+    throw new ApiError(401, "Invalid or expired refresh token");
   }
 });
