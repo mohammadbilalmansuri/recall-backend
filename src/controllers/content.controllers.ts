@@ -75,12 +75,9 @@ export const addContent = asyncHandler(async (req, res) => {
 });
 
 export const getContent = asyncHandler(async (req, res) => {
-  return new ApiResponse(
-    res,
-    200,
-    "Content fetched successfully",
-    req.content
-  ).send();
+  return new ApiResponse(res, 200, "Content fetched successfully", {
+    content: req.content,
+  }).send();
 });
 
 export const deleteContent = asyncHandler(async (req, res) => {
@@ -88,7 +85,12 @@ export const deleteContent = asyncHandler(async (req, res) => {
   if (!content) throw new ApiError(404, "Content not found");
 
   await content.deleteOne();
-  await pineconeIndex._deleteOne(String(content._id));
+
+  try {
+    await pineconeIndex
+      .namespace(`user_${req.user?.id}`)
+      .deleteOne(String(content._id));
+  } catch {}
 
   return new ApiResponse(res, 200, "Content deleted successfully").send();
 });
