@@ -8,8 +8,8 @@ import authMiddleware from "../middlewares/auth.middleware";
 
 const shareRoutes = Router();
 
-shareRoutes.post("/", authMiddleware, getShareLink);
-shareRoutes.delete("/", authMiddleware, deleteShareLink);
-shareRoutes.get("/:hash", getSharedContent);
+shareRoutes.post("/get", authMiddleware, getShareLink);
+shareRoutes.delete("/delete", authMiddleware, deleteShareLink);
+shareRoutes.get("/content/:hash", getSharedContent);
 
 export default shareRoutes;
