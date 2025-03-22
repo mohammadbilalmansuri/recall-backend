@@ -86,7 +86,10 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to delete user");
 
   await Content.deleteMany({ owner: req.user?.id });
-  await pineconeIndex.namespace(String(req.user?.id)).deleteAll();
+
+  try {
+    await pineconeIndex.namespace(`user_${req.user?.id}`).deleteAll();
+  } catch (error) {}
 
   new ApiResponse(res, 200, "User deleted successfully")
     .clearCookies(["accessToken", "refreshToken"])
